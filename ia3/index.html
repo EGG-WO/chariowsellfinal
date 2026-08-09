@@ -640,50 +640,93 @@
         }
     }
 
-    window.playChannel = function(id) {
-        const ch = allChannels.find(c => c.id === id);
-        if (!ch) return;
-        activeChannel = ch;
+   // ===================== LECTEUR LIVEWATCH CORRIGÉ =====================
+window.playChannel = function(id) {
+    const ch = allChannels.find(c => c.id === id);
+    if (!ch) return;
 
-        document.querySelectorAll('.ch-item').forEach(el => el.classList.remove('active'));
-        const activeEl = Array.from(document.querySelectorAll('.ch-item')).find(el => el.textContent.includes(ch.name));
-        if (activeEl) activeEl.classList.add('active');
+    activeChannel = ch;
 
-        const frame = document.getElementById('videoFrame');
-        frame.innerHTML = `<iframe src="${ch.embed_url}" allowfullscreen allow="autoplay; fullscreen" sandbox="allow-scripts allow-same-origin allow-presentation"></iframe>`;
+    // Active visuellement la chaîne sélectionnée
+    document.querySelectorAll('.ch-item')
+        .forEach(el => el.classList.remove('active'));
 
-        document.getElementById('videoInfo').style.display = 'flex';
-        const logoStyle = getLogoStyle(ch.name);
-        const initials = getInitials(ch.name);
-        document.getElementById('currentLogo').innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:10px;color:#fff;${logoStyle}">${initials}</div>`;
-        document.getElementById('currentTitle').innerHTML = `${ch.name} <span>\u2022</span> En direct`;
-        document.getElementById('currentCat').textContent = ch.categories.join(', ');
-        document.getElementById('currentCountry').textContent = ch.country;
-    };
+    const activeEl = Array.from(document.querySelectorAll('.ch-item'))
+        .find(el => el.textContent.includes(ch.name));
 
-    function setupSearch() {
-        const input = document.getElementById('searchInput');
-        let timeout;
-        input.addEventListener('input', e => {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => {
-                currentSearch = e.target.value.trim();
-                filterAndRender();
-            }, 300);
-        });
+    if (activeEl) activeEl.classList.add('active');
+
+    const frame = document.getElementById('videoFrame');
+
+    // ===== IFRAME LIVEWATCH =====
+    frame.innerHTML = `
+        <iframe
+            src="${ch.embed_url}"
+            width="100%"
+            height="100%"
+            frameborder="0"
+            allowfullscreen
+            loading="eager"
+            allow="
+                autoplay;
+                fullscreen;
+                picture-in-picture;
+                encrypted-media;
+                clipboard-write
+            "
+            referrerpolicy="strict-origin-when-cross-origin"
+            sandbox="
+                allow-scripts
+                allow-same-origin
+                allow-presentation
+                allow-forms
+                allow-popups
+                allow-popups-to-escape-sandbox
+                allow-top-navigation-by-user-activation
+            ">
+        </iframe>
+    `;
+
+    // ===== MISE À JOUR DES INFOS =====
+    document.getElementById('videoInfo').style.display = 'flex';
+
+    const logoStyle = getLogoStyle(ch.name);
+    const initials = getInitials(ch.name);
+
+    document.getElementById('currentLogo').innerHTML = `
+        <div style="
+            width:100%;
+            height:100%;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-weight:700;
+            font-size:10px;
+            color:#fff;
+            ${logoStyle}
+        ">
+            ${initials}
+        </div>
+    `;
+
+    document.getElementById('currentTitle').innerHTML =
+        `${ch.name} <span>•</span> En direct`;
+
+    document.getElementById('currentCat').textContent =
+        ch.categories.join(', ');
+
+    document.getElementById('currentCountry').textContent =
+        ch.country;
+
+    // Scroll vers le lecteur sur mobile
+    if (window.innerWidth <= 768) {
+        document.querySelector('.hero-section')
+            .scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
     }
-
-    function setupMenu() {
-        const toggle = document.getElementById('menuToggle');
-        const sidebar = document.getElementById('sidebar');
-        toggle.addEventListener('click', () => sidebar.classList.toggle('open'));
-        document.addEventListener('click', e => {
-            if (window.innerWidth <= 768 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !toggle.contains(e.target)) {
-                sidebar.classList.remove('open');
-            }
-        });
-    }
-
+};
     </script>
 
 </div>
