@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Channel+ — Accès Premium</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+    --accent-gold: #e8b86d;
+    --accent-orange: #d4853e;
+    --accent-cyan: #22d3ee;
+    --accent-blue: #2563eb;
+    --bg-primary: #050816;
+    --bg-secondary: #111827;
+    --bg-tertiary: #0b1220;
+    --text-primary: #ffffff;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;font-family:'Outfit',Arial,sans-serif;background:var(--bg-primary);color:var(--text-primary);overflow:hidden}
+
+/* Canvas background */
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+.bg-overlay{position:fixed;inset:0;z-index:1;background:radial-gradient(ellipse at 50% 0%,rgba(212,133,62,0.08) 0%,transparent 60%);pointer-events:none}
+
+/* Layout */
+.gate-wrap{position:relative;z-index:2;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}
+
+/* Card */
+.box {
+    width:min(92%,420px);
+    background:linear-gradient(180deg, rgba(17,24,39,0.95), rgba(11,18,32,0.98));
+    padding:40px 32px;
+    border-radius:24px;
+    text-align:center;
+    box-shadow:0 24px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(232,184,109,0.08);
+    border:1px solid rgba(255,255,255,0.06);
+    backdrop-filter:blur(20px);
+    position:relative;
+    overflow:hidden;
+}
+.box::before {
+    content:"";
+    position:absolute;
+    top:0;left:0;right:0;height:3px;
+    background:linear-gradient(90deg, var(--accent-gold), var(--accent-orange), var(--accent-cyan));
+    opacity:0.7;
+}
+
+.brand-icon {
+    width:72px;height:72px;border-radius:22px;
+    background:linear-gradient(135deg, var(--accent-gold), var(--accent-orange));
+    display:flex;align-items:center;justify-content:center;margin:0 auto 20px;
+    box-shadow:0 10px 30px rgba(212,133,62,0.25);
+    animation:float 3s ease-in-out infinite;
+    font-size:28px;
+}
+@keyframes float {
+    0%,100%{transform:translateY(0)}
+    50%{transform:translateY(-6px)}
+}
+
+h2 {
+    font-family:'Space Grotesk',sans-serif;
+    font-size:24px;font-weight:700;
+    margin:0 0 6px;
+    background:linear-gradient(135deg, var(--accent-gold), var(--accent-cyan));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    background-clip:text;
+}
+.sub { color:var(--text-secondary); font-size:14px; margin:0 0 26px; }
+
+.input-wrap {
+    position:relative;
+    margin-bottom:14px;
+}
+input {
+    width:100%;
+    padding:16px 18px;
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:14px;
+    background:rgba(5,8,22,0.6);
+    color:var(--text-primary);
+    font-size:16px;
+    font-family:'Outfit',sans-serif;
+    outline:none;
+    transition:border-color 0.2s, box-shadow 0.2s;
+    text-transform:uppercase;
+    letter-spacing:1px;
+}
+input::placeholder { color:var(--text-muted); text-transform:none; letter-spacing:0; }
+input:focus {
+    border-color:rgba(232,184,109,0.35);
+    box-shadow:0 0 0 3px rgba(232,184,109,0.08);
+}
+
+button {
+    width:100%;
+    padding:16px;
+    border:0;
+    border-radius:14px;
+    background:linear-gradient(135deg, var(--accent-gold), var(--accent-orange));
+    color:#050816;
+    font-weight:700;
+    font-size:16px;
+    font-family:'Space Grotesk',sans-serif;
+    cursor:pointer;
+    transition:transform 0.15s, box-shadow 0.2s;
+    position:relative;
+    overflow:hidden;
+}
+button::after {
+    content:"";
+    position:absolute;inset:0;
+    background:linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+    opacity:0;
+    transition:opacity 0.2s;
+}
+button:hover { transform:translateY(-1px); box-shadow:0 10px 25px rgba(212,133,62,0.3); }
+button:hover::after { opacity:1; }
+button:disabled { opacity:.6; cursor:not-allowed; transform:none; box-shadow:none; }
+button:disabled::after { opacity:0; }
+
+#message {
+    min-height:28px;
+    margin-top:18px;
+    font-size:14px;
+    font-weight:500;
+}
+#message.success { color:var(--accent-cyan); }
+#message.error { color:#e74c3c; }
+#message.warn { color:var(--accent-gold); }
+
+/* App container */
+#app{position:fixed;inset:0;display:none;background:var(--bg-primary);z-index:10}
+#siteFrame{width:100%;height:100%;border:0;display:block}
+
+/* Loading overlay */
+#loading{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:var(--bg-primary);z-index:20;gap:16px}
+#loading .spinner {
+    width:44px;height:44px;
+    border:3px solid var(--bg-tertiary);
+    border-top-color:var(--accent-gold);
+    border-radius:50%;
+    animation:spin 1s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+#loading p { color:var(--text-secondary); font-size:14px; font-family:'Space Grotesk',sans-serif; }
+
+/* Footer brand */
+.brand-footer {
+    margin-top:24px;
+    padding-top:20px;
+    border-top:1px solid rgba(255,255,255,0.05);
+    color:var(--text-muted);
+    font-size:11px;
+    letter-spacing:0.5px;
+    font-family:'Space Grotesk',sans-serif;
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div class="bg-overlay"></div>
+
+<div class="gate-wrap">
+    <div id="ticketBox" class="box">
+        <div class="brand-icon">🎫</div>
+        <h2>CHANNEL+ PREMIUM</h2>
+        <p class="sub">Entrez votre ticket pour accéder au service.</p>
+        <div class="input-wrap">
+            <input id="ticketInput" type="text" autocomplete="off" placeholder="ABCD-1234-EFGH">
+        </div>
+        <button id="btnVerifier">Vérifier</button>
+        <p id="message"></p>
+        <div class="brand-footer">Sécurisé par Channel+ Ticket System</div>
+    </div>
+</div>
+
+<div id="loading">
+    <div class="spinner"></div>
+    <p>Vérification de votre accès…</p>
+</div>
+
+<div id="app">
+    <iframe id="siteFrame" title="Channel+ Premium" allow="autoplay; fullscreen; picture-in-picture"></iframe>
+</div>
+
+<script>
+// ===== Canvas background animation (StreamFlow style) =====
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+let W, H, particles = [];
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+resize(); window.addEventListener('resize', resize);
+class Particle {
+    constructor() { this.reset(); }
+    reset() { this.x = Math.random()*W; this.y = Math.random()*H; this.vx = (Math.random()-0.5)*0.3; this.vy = (Math.random()-0.5)*0.3; this.r = Math.random()*1.5+0.5; this.alpha = Math.random()*0.3+0.1; }
+    update() { this.x += this.vx; this.y += this.vy; if(this.x<0||this.x>W||this.y<0||this.y>H) this.reset(); }
+    draw() { ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fillStyle = `rgba(232,184,109,${this.alpha})`; ctx.fill(); }
+}
+for(let i=0;i<60;i++) particles.push(new Particle());
+let time = 0;
+function animate() {
+    time++; ctx.clearRect(0,0,W,H);
+    for(let w=0;w<4;w++) {
+        ctx.beginPath(); const off = w*120 + time*(0.3+w*0.1); const amp = 30+w*15; const freq = 0.003+w*0.001;
+        for(let x=0;x<=W;x+=5){ const y = H*0.5 + Math.sin(x*freq+off*0.01)*amp + Math.sin(x*freq*2+off*0.015)*(amp*0.3); if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+        ctx.strokeStyle = `rgba(212,133,62,${0.03-w*0.005})`; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+    particles.forEach(p=>{ p.update(); p.draw(); });
+    for(let i=0;i<particles.length;i++) for(let j=i+1;j<particles.length;j++){
+        const dx = particles[i].x-particles[j].x, dy = particles[i].y-particles[j].y, d = Math.sqrt(dx*dx+dy*dy);
+        if(d<150){ ctx.beginPath(); ctx.moveTo(particles[i].x,particles[i].y); ctx.lineTo(particles[j].x,particles[j].y); ctx.strokeStyle = `rgba(232,184,109,${(1-d/150)*0.08})`; ctx.lineWidth = 0.5; ctx.stroke(); }
+    }
+    const ox = W*0.7+Math.sin(time*0.01)*100, oy = H*0.3+Math.cos(time*0.008)*50;
+    const g = ctx.createRadialGradient(ox,oy,0,ox,oy,300); g.addColorStop(0,'rgba(212,133,62,0.03)'); g.addColorStop(1,'transparent');
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+    requestAnimationFrame(animate);
+}
+animate();
+</script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDPh3dJ37uy21L70Mekm_ikuIfeD8wCZU",
+  authDomain: "channelplus-8c219.firebaseapp.com",
+  projectId: "channelplus-8c219",
+  storageBucket: "channelplus-8c219.firebasestorage.app",
+  messagingSenderId: "178858225057",
+  appId: "1:178858225057:web:63c327bf23eb877f196fe0"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const TICKET_KEY = "channelplus_ticket";
+const SESSION_KEY = "channelplus_session";
+const SESSION_MAX_AGE = 12 * 60 * 60 * 1000;
+const SITE_URL = "./index.html";
+
+const ticketBox = document.getElementById("ticketBox");
+const appBox = document.getElementById("app");
+const frame = document.getElementById("siteFrame");
+const loading = document.getElementById("loading");
+const input = document.getElementById("ticketInput");
+const button = document.getElementById("btnVerifier");
+const message = document.getElementById("message");
+
+function setMsg(text, type = "") {
+    message.textContent = text;
+    message.className = type;
+}
+
+function saveAccess(code) {
+    localStorage.setItem(TICKET_KEY, code);
+    localStorage.setItem(SESSION_KEY, String(Date.now()));
+}
+
+function clearAccess() {
+    localStorage.removeItem(TICKET_KEY);
+    localStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
+}
+
+function getSavedTicket() {
+    const code = localStorage.getItem(TICKET_KEY);
+    const time = Number(localStorage.getItem(SESSION_KEY) || 0);
+    if (!code || !time || Date.now() - time > SESSION_MAX_AGE) {
+        clearAccess();
+        return null;
+    }
+    return code;
+}
+
+async function validateTicket(code) {
+    const snap = await getDoc(doc(db, "tickets", code));
+    if (!snap.exists()) return {ok:false, reason:"Ticket introuvable"};
+
+    const data = snap.data();
+    if (data.expiresAt && typeof data.expiresAt.toMillis === "function" &&
+        data.expiresAt.toMillis() < Date.now()) {
+        return {ok:false, reason:"Ticket expiré"};
+    }
+    return {ok:true};
+}
+
+function showSite(code) {
+    // Prépare la session pour l'iframe (sera envoyée via postMessage, l'iframe stocke elle-même)
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ticket:code, at:Date.now()}));
+
+    ticketBox.style.display = "none";
+    loading.style.display = "flex";
+    appBox.style.display = "block";
+
+    frame.onload = () => {
+        frame.contentWindow.postMessage(
+            {type:"CHANNELPLUS_ACCESS", ticket:code},
+            window.location.origin
+        );
+        loading.style.display = "none";
+    };
+
+    frame.src = SITE_URL;
+}
+
+async function verifierTicket(codeFromStorage = null) {
+    const code = (codeFromStorage || input.value).trim().toUpperCase();
+
+    if (!code) {
+        setMsg("⚠️ Entrez un ticket", "warn");
+        return false;
+    }
+
+    button.disabled = true;
+    button.textContent = "Vérification…";
+    setMsg("🔄 Vérification en cours…", "warn");
+
+    try {
+        const result = await validateTicket(code);
+        if (!result.ok) {
+            clearAccess();
+            setMsg("❌ " + result.reason, "error");
+            return false;
+        }
+        saveAccess(code);
+        setMsg("✅ Accès autorisé", "success");
+        showSite(code);
+        return true;
+    } catch (e) {
+        console.error(e);
+        setMsg("❌ Impossible de vérifier le ticket.", "error");
+        return false;
+    } finally {
+        button.disabled = false;
+        button.textContent = "Vérifier";
+    }
+}
+
+button.addEventListener("click", () => verifierTicket());
+input.addEventListener("keydown", e => { if (e.key === "Enter") verifierTicket(); });
+
+// Restauration automatique de session
+(async () => {
+    const saved = getSavedTicket();
+    if (saved) {
+        await verifierTicket(saved);
+    }
+})();
+
+// Réception du refus d'accès depuis l'enfant
+window.addEventListener("message", e => {
+    if (e.origin !== window.location.origin) return;
+    if (e.data?.type === "CHANNELPLUS_ACCESS_DENIED") {
+        clearAccess();
+        frame.src = "about:blank";
+        appBox.style.display = "none";
+        ticketBox.style.display = "block";
+        setMsg("❌ Accès refusé. Veuillez saisir un ticket valide.", "error");
+    }
+});
+</script>
+</body>
+</html>
